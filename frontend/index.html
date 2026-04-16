@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SecureLegal — Secure Legal Case & Document Management</title>
+
+    <!--
+      Content Security Policy (CSP) — defence-in-depth meta tag.
+      The primary CSP is enforced via HTTP headers in vite.config.ts and the
+      production server.  This meta tag provides a secondary fallback layer.
+      Note: meta-tag CSP cannot block frame-ancestors; that is header-only.
+    -->
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self';
+                   script-src 'self' 'unsafe-inline';
+                   style-src 'self' 'unsafe-inline';
+                   img-src 'self' data: blob:;
+                   font-src 'self';
+                   connect-src 'self' http://localhost:3000;
+                   object-src 'none';" />
+
+    <!-- Prevent MIME sniffing -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+
+    <!-- Referrer policy -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

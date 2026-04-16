@@ -1,0 +1,122 @@
+name: DevSecOps Pipeline
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+jobs:
+  security-audit:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Audit Backend Dependencies
+        run: |
+          cd backend
+          npm install
+          npm audit --audit-level=high
+      - name: Audit Frontend Dependencies
+        run: |
+          cd frontend
+          npm install
+          npm audit --audit-level=high
+  sast-scan:
+    name: Static Application Security Testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Run GitHub CodeQL (SAST)
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript, typescript
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+  build-and-test:
+    name: Build and Test
+    needs: [security-audit, sast-scan]
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER:     postgres
+          POSTGRES_PASSWORD: admin
+          POSTGRES_DB:       secure_legal_db_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          npm install
+      - name: TypeScript Compile Check (Backend)
+        run: |
+          cd backend
+          npm run build
+      - name: Run Backend Tests
+        env:
+          DB_TYPE:          postgres
+          DB_HOST:          localhost
+          DB_PORT:          5432
+          DB_USER:          postgres
+          DB_PASSWORD:      admin
+          DB_NAME:          secure_legal_db_test
+          JWT_SECRET:       test_jwt_secret
+          NODE_ENV:         test
+        run: |
+          cd backend
+          npm test
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm install
+      - name: Run Frontend Tests
+        run: |
+          cd frontend
+          npm test
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm run build
+  docker-build:
+    name: Docker Build
+    needs: [build-and-test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build Backend Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push:    false
+          tags:    secure-legal-backend:latest
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+      - name: Build Frontend Docker Image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          push:    false
+          tags:    secure-legal-frontend:latest
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
