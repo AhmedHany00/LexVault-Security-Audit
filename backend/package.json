@@ -23,8 +23,8 @@
     "pdf2json": "^4.0.2",
     "pg": "^8.13.3",
     "reflect-metadata": "^0.2.2",
-    "sqlite3": "^5.1.7",
-    "typeorm": "^0.3.28",
+    "sqlite3": "^6.0.1",
+    "typeorm": "^0.3.6",
     "winston": "^3.19.0"
   },
   "devDependencies": {
